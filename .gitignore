@@ -1,0 +1,6 @@
+.history
+vendor
+go.sum
+app
+.env
+scripts

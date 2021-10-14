@@ -1,0 +1,11 @@
+version: "2"
+services:
+  shutong:
+    image: registry.cn-hangzhou.aliyuncs.com/chaop-public/nju-shutong
+    container_name: nju-shutong
+    restart: always
+    volumes:
+      - ./scripts:/scripts
+    environment:
+      - EAI_SESS=$EAI_SESS
+      - ROOM=$ROOM
