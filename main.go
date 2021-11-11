@@ -35,24 +35,36 @@ func sendMessage(content string) {
 	log.Println("sendMessage", content)
 }
 
-func getElectricBalance(areaId string, buildId string, roomId string) (float64, error) {
-	url := fmt.Sprintf("https://wx.nju.edu.cn/njucharge/wap/electric/charge?area_id=%s&build_id=%s&room_id=%s", areaId, buildId, roomId)
+func doGet(url string, headers map[string]string) (string, error) {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	request.Header.Add("Cookie", "eai-sess="+EAI_SESS)
+	for k, v := range headers {
+		request.Header.Add(k, v)
+	}
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	defer response.Body.Close()
 	bodyByte, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	body := string(bodyByte)
+	return body, nil
+}
+
+func getElectricBalance(areaId string, buildId string, roomId string) (float64, error) {
+	url := fmt.Sprintf("https://wx.nju.edu.cn/njucharge/wap/electric/charge?area_id=%s&build_id=%s&room_id=%s", areaId, buildId, roomId)
+	body, err := doGet(url, map[string]string{
+		"Cookie": "eai-sess=" + EAI_SESS,
+	})
+	if err != nil {
+		return 0, err
+	}
 	reg := regexp.MustCompile(`dianyue\w*:\w*"([\d\.]+)"`)
 	result := reg.FindStringSubmatch(body)
 	if len(result) != 2 {
