@@ -9,3 +9,4 @@ services:
     environment:
       - EAI_SESS=$EAI_SESS
       - ROOM=$ROOM
+      - MOD_AUTH_CAS=$MOD_AUTH_CAS
