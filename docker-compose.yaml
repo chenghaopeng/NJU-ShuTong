@@ -6,7 +6,4 @@ services:
     restart: always
     volumes:
       - ./scripts:/scripts
-    environment:
-      - EAI_SESS=$EAI_SESS
-      - ROOM=$ROOM
-      - MOD_AUTH_CAS=$MOD_AUTH_CAS
+    env_file: .env
