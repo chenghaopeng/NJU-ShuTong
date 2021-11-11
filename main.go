@@ -12,8 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/robfig/cron/v3"
 )
@@ -22,7 +20,7 @@ var EAI_SESS = os.Getenv("EAI_SESS")
 var ROOM = strings.ReplaceAll(os.Getenv("ROOM"), " ", "")
 var MOD_AUTH_CAS = os.Getenv("MOD_AUTH_CAS")
 
-var wg sync.WaitGroup
+var tasks *cron.Cron
 
 func execScript(name string, env []string) {
 	cmd := exec.Cmd{
@@ -99,8 +97,6 @@ func getLatestHealthReport() (checked bool, err error) {
 }
 
 func taskElectricBalance() {
-	wg.Add(1)
-	defer wg.Done()
 	ids := strings.SplitN(ROOM, ",", 3)
 	if len(EAI_SESS) == 0 || len(ids) != 3 {
 		sendMessage("寝室未配置或配置错误，或未配置 EAI_SESS，不开启寝室电量监测")
@@ -108,7 +104,7 @@ func taskElectricBalance() {
 	}
 	sendMessage("书童开始为你监测寝室电量啦～")
 	sentErr, sentEle := false, false
-	for {
+	tasks.AddFunc("*/5 * * * *", func() {
 		electric, err := getElectricBalance(ids[0], ids[1], ids[2])
 		log.Println("taskElectricBalance", electric, err)
 		if err != nil {
@@ -127,21 +123,17 @@ func taskElectricBalance() {
 				sentEle = false
 			}
 		}
-		time.Sleep(time.Minute)
-	}
+	})
 }
 
 func taskHealthReport() {
-	wg.Add(1)
-	defer wg.Done()
 	if len(MOD_AUTH_CAS) == 0 {
 		sendMessage("未配置 MOD_AUTH_CAS，不开启每日健康打卡监测")
 		return
 	}
 	sendMessage("书童开始为你监测每日健康打卡啦～")
 	sentErr := false
-	c := cron.New()
-	c.AddFunc("0 10,22 * * *", func() {
+	tasks.AddFunc("0 10,22 * * *", func() {
 		checked, err := getLatestHealthReport()
 		log.Println("taskHealthReport", checked, err)
 		if err != nil {
@@ -156,14 +148,13 @@ func taskHealthReport() {
 			}
 		}
 	})
-	c.Start()
-	defer c.Stop()
-	select {}
 }
 
 func main() {
-	go taskElectricBalance()
-	go taskHealthReport()
-	time.Sleep(time.Second)
-	wg.Wait()
+	tasks = cron.New()
+	taskElectricBalance()
+	taskHealthReport()
+	tasks.Start()
+	defer tasks.Stop()
+	select {}
 }
