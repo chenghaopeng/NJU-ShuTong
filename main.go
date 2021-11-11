@@ -133,7 +133,9 @@ func taskHealthReport() {
 	}
 	sendMessage("书童开始为你监测每日健康打卡啦～")
 	sentErr := false
-	tasks.AddFunc("0 10,22 * * *", func() {
+	// tasks.AddFunc("0 10,22 * * *", func() {
+	// 注意 docker 里一般都是零时区
+	tasks.AddFunc("0 2,14 * * *", func() {
 		checked, err := getLatestHealthReport()
 		log.Println("taskHealthReport", checked, err)
 		if err != nil {
